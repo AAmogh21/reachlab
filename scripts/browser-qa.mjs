@@ -125,7 +125,7 @@ await writeFile(
   JSON.stringify(
     {
       scope:
-        "Automated local browser functional checks; no human usability study",
+        "Automated browser functional checks; no human usability study",
       testedUrl: baseUrl,
       checks: [
         "default geometry-validated route",

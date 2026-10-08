@@ -1,0 +1,17 @@
+{
+  "releaseDate": "2026-10-08",
+  "app": "https://aamogh21.github.io/reachlab/",
+  "repository": "https://github.com/AAmogh21/reachlab",
+  "demo": "https://aamogh21.github.io/reachlab/demo.html",
+  "checks": {
+    "coreTests": "9 passed",
+    "browserFunctionalChecks": "11 passed on public deployment, including offline worker training",
+    "cursorReviewRegressions": "passed",
+    "accessibilityControlChecks": "passed on public deployment",
+    "lint": "passed",
+    "publicDemoDurationSeconds": 190.36,
+    "hostedReportSha256": "dd62c1d1c139aacee040601cd2611a9cf496c5045f5cc28dd2a47a5d766f2f9c"
+  },
+  "limits": "Chromium automated checks; no independent assistive-technology, classroom, or hardware study. Extensive AI contributions disclosed.",
+  "competitionsAndJournals": "No submissions or awards claimed."
+}
