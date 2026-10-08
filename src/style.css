@@ -145,6 +145,7 @@ nav {
   gap: 35px;
   border-bottom: 1px solid var(--line);
   margin-bottom: 24px;
+  padding: 8px 4px;
 }
 .tab {
   border: 0;
@@ -161,7 +162,8 @@ nav {
   font-size: 14px;
   margin-left: 10px;
 }
-.tab.active {
+.tab.active,
+.tab[aria-pressed="true"] {
   color: var(--mint);
   border-bottom-color: var(--mint);
 }
@@ -187,9 +189,10 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
+summary:focus-visible,
 canvas:focus-visible {
-  outline: 2px solid var(--mint);
-  outline-offset: 4px;
+  outline: 3px solid var(--lavender);
+  outline-offset: 2px;
 }
 .quiet {
   background: none;
@@ -405,13 +408,28 @@ input[type="range"] {
   padding: 6px 10px;
   border-radius: 0;
 }
-.selected {
+.selected,
+.switcher button[aria-pressed="true"] {
   color: var(--mint);
   background: #223e31;
 }
 #cspace {
   border-radius: 5px;
   cursor: crosshair;
+}
+#map-hint {
+  color: var(--text);
+  font-size: 12px;
+  margin: 10px 0 0;
+}
+#map-status {
+  color: var(--text);
+  min-height: 1.6em;
+  margin-top: 4px;
+}
+#map-status:empty {
+  min-height: 0;
+  margin: 0;
 }
 .metric {
   border-bottom: 1px solid var(--line);
