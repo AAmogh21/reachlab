@@ -28,4 +28,3 @@ Checked October 8, 2026.
 Open this project folder. Use its Agent to plan a bounded change, implement it, and run the configured tests. Ask the verifier subagent to review completed code and the research-reviewer to check claims. Built-in models can be selected through Cursor's existing model picker; there is no need to buy API keys or train a new foundation model for development.
 
 External connections should support a concrete task. For this app, GitHub publishing is the useful next connection. Connecting unrelated email, calendars, databases, or paid inference would not add needed functionality.
-
