@@ -1,0 +1,58 @@
+{
+  "schema": "reachlab-experiment-v1",
+  "scope": "Synthetic planar kinematic simulation. No physical robot or learner outcome validation.",
+  "config": {
+    "links": [
+      130,
+      100
+    ],
+    "base": {
+      "x": 0,
+      "y": 0
+    },
+    "linkRadius": 5,
+    "obstacles": [
+      {
+        "x": 180,
+        "y": 0,
+        "r": 12
+      },
+      {
+        "x": -150,
+        "y": -60,
+        "r": 18
+      }
+    ]
+  },
+  "configuration": {
+    "q1": -0.6108652381980153,
+    "q2": 0
+  },
+  "target": {
+    "x": 185,
+    "y": 125
+  },
+  "path": [],
+  "model": {
+    "type": "periodic-kNN",
+    "trainingCount": 500,
+    "k": 5,
+    "trainingSeed": 314159,
+    "testSeed": 90210,
+    "metrics": {
+      "sampleCount": 800,
+      "confusion": {
+        "truePositive": 13,
+        "trueNegative": 755,
+        "falsePositive": 13,
+        "falseNegative": 19
+      },
+      "accuracy": 0.96,
+      "precision": 0.5,
+      "recall": 0.40625,
+      "falseSafe": 19,
+      "falseSafeRate": 0.59375
+    }
+  },
+  "notebook": "QA experiment: 500 examples, k=5, default workshop. 96.0% accuracy hid 19 missed collisions on 800 held-out configurations."
+}

@@ -1,6 +1,23 @@
 {
-  "name": "reachlab", "version": "1.0.0", "private": true, "type": "module",
+  "name": "reachlab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
   "description": "An offline robotics and machine learning workbench for hardware-free engineering education",
-  "scripts": {"start": "node scripts/server.mjs", "test": "node --test", "benchmark": "node scripts/benchmark.mjs"},
-  "engines": {"node": ">=22"}
+  "scripts": {
+    "start": "node scripts/server.mjs",
+    "test": "node --test",
+    "benchmark": "node scripts/benchmark.mjs",
+    "lint": "eslint .",
+    "format": "prettier --write src scripts tests index.html sw.js",
+    "test:browser": "node scripts/browser-qa.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "eslint": "^10.12.0",
+    "playwright": "1.62.1",
+    "prettier": "^3.9.9"
+  }
 }

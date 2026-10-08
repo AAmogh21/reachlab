@@ -1,6 +1,6 @@
 # ReachLab demo script — target 3 minutes 20 seconds
 
-Draft narration and recording plan, not a recorded or uploaded video. Rehearse on the final build; show actual values instead of reading invented metrics. Public ForgeHacks demo must be 2–4 minutes. Record screen plus your own narration; confirm all personal statements.
+A captioned recording of actual app operation is saved as `reachlab-demo.webm`; it has not been uploaded. The script below is an optional plan for a student-narrated version. Rehearse on the final build; show actual values instead of reading invented metrics. Public ForgeHacks demo must be 2–4 minutes. Confirm all personal statements before recording narration.
 
 ## 0:00–0:25 — problem and introduction
 

@@ -41,6 +41,17 @@ node --test
 node scripts/benchmark.mjs
 ```
 
+Optional development checks use the pinned tools in `package-lock.json`:
+
+```sh
+npm ci
+npx playwright install chromium
+npm run lint
+npm run test:browser
+```
+
+Keep the local server running for the browser checks. These tools are not needed to use the app. A captioned demonstration is saved in `submission/reachlab-demo.webm`.
+
 The technical report and benchmark are under `research/`. Evaluation uses simulated geometry; it is not a human learning study or physical-robot test. The benchmark scene is intentionally different from the default UI scene. Browser evaluation uses 800 test configurations; the saved research benchmark uses 3,000. Their metrics must not be conflated.
 
 ## Limits
