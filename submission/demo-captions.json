@@ -1,0 +1,50 @@
+{
+  "type": "Captioned recording of actual app operation; no synthesized personal voice",
+  "captions": [
+    {
+      "timeSeconds": 0,
+      "title": "ReachLab · Engineering within reach",
+      "text": "A local robotics workbench for learning without owning a robot. Design an arm, train a model, and test predictions."
+    },
+    {
+      "timeSeconds": 15,
+      "title": "1 · Explore the mechanics",
+      "text": "Two joint angles determine the tip position. Link lengths define the reachable region. This is a planar kinematic simulation, not a physical robot controller."
+    },
+    {
+      "timeSeconds": 33,
+      "title": "2 · Plan through configuration space",
+      "text": "A* searches pairs of joint angles. The planner checks both links and uses conservative swept-motion bounds to validate the route within the model."
+    },
+    {
+      "timeSeconds": 50,
+      "title": "Watch the arm detour",
+      "text": "The tip is not the whole robot: both links must avoid obstacles. Learned predictions never approve a movement."
+    },
+    {
+      "timeSeconds": 63,
+      "title": "3 · Train an actual collision classifier",
+      "text": "100 training examples; k = 5. On 800 separate test configurations: accuracy 95.5%, collision recall 15.6%, and 27 missed collisions. All labels come from simulated geometry."
+    },
+    {
+      "timeSeconds": 89,
+      "title": "More examples. Still no guarantee.",
+      "text": "1,500 training examples: accuracy 97.6%, recall 75.0%, and 8 missed collisions in this test. Inspect false negatives, not accuracy alone. This is synthetic evidence, not hardware validation."
+    },
+    {
+      "timeSeconds": 112,
+      "title": "4 · Predict, experiment, explain",
+      "text": "Challenges connect inverse kinematics, path planning, and model evaluation. A local notebook and CSV/JSON exports preserve experiment evidence."
+    },
+    {
+      "timeSeconds": 130,
+      "title": "5 · Local computation, verified offline",
+      "text": "The browser network is now disabled. The app has reloaded and trained again using cached files. No AI API keys, account, cloud inference, or hardware are required."
+    },
+    {
+      "timeSeconds": 150,
+      "title": "Evidence and contribution disclosure",
+      "text": "AI assistants provided extensive implementation and testing. The student supplied project direction and robotics background. No learning-outcome study, award, peer review, or physical-robot test is claimed."
+    }
+  ]
+}

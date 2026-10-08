@@ -1,0 +1,22 @@
+{
+  "scope": "Automated local browser functional checks; no human usability study",
+  "checks": [
+    "default geometry-validated route",
+    "playback reaches target",
+    "unreachable target message",
+    "local AI worker training",
+    "heldout metrics match expected default scene",
+    "CSV download",
+    "notes persistence",
+    "model invalidation after scene change",
+    "offline reload, planning, and AI worker",
+    "390px responsive layout without horizontal overflow",
+    "no uncaught browser errors"
+  ],
+  "defaultUiMetrics": {
+    "accuracy": "96.0%",
+    "missed": "19",
+    "recall": "40.6%"
+  },
+  "errors": []
+}

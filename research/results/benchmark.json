@@ -1,0 +1,86 @@
+{
+  "title": "ReachLab synthetic collision surrogate benchmark",
+  "scope": "Seeded simulated planar geometry only. No physical robot, human participants, hardware trials, or real-world safety validation. Predictions never replace exact collision checks.",
+  "method": "Uniform independent joint angles over [-pi,pi]^2; nested training sets from one seed; independent heldout seed. Labels use exact segment-to-circle distance including link radius. kNN uses periodic cosine distance. Positive class is collision; false-safe means collision mislabeled free.",
+  "config": {
+    "links": [
+      130,
+      100
+    ],
+    "base": {
+      "x": 0,
+      "y": 0
+    },
+    "linkRadius": 5,
+    "obstacles": [
+      {
+        "x": 145,
+        "y": 35,
+        "r": 22
+      },
+      {
+        "x": 65,
+        "y": -110,
+        "r": 24
+      },
+      {
+        "x": -105,
+        "y": 75,
+        "r": 18
+      }
+    ]
+  },
+  "trainingSeed": 314159,
+  "heldoutSeed": 90210,
+  "heldoutCount": 3000,
+  "rows": [
+    {
+      "trainingCount": 100,
+      "k": 5,
+      "sampleCount": 3000,
+      "confusion": {
+        "truePositive": 372,
+        "trueNegative": 1932,
+        "falsePositive": 250,
+        "falseNegative": 446
+      },
+      "accuracy": 0.768,
+      "precision": 0.5980707395498392,
+      "recall": 0.4547677261613692,
+      "falseSafe": 446,
+      "falseSafeRate": 0.5452322738386308
+    },
+    {
+      "trainingCount": 500,
+      "k": 5,
+      "sampleCount": 3000,
+      "confusion": {
+        "truePositive": 582,
+        "trueNegative": 2005,
+        "falsePositive": 177,
+        "falseNegative": 236
+      },
+      "accuracy": 0.8623333333333333,
+      "precision": 0.766798418972332,
+      "recall": 0.7114914425427873,
+      "falseSafe": 236,
+      "falseSafeRate": 0.2885085574572127
+    },
+    {
+      "trainingCount": 1500,
+      "k": 5,
+      "sampleCount": 3000,
+      "confusion": {
+        "truePositive": 712,
+        "trueNegative": 2092,
+        "falsePositive": 90,
+        "falseNegative": 106
+      },
+      "accuracy": 0.9346666666666666,
+      "precision": 0.8877805486284289,
+      "recall": 0.8704156479217604,
+      "falseSafe": 106,
+      "falseSafeRate": 0.1295843520782396
+    }
+  ]
+}

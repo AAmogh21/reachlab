@@ -1,0 +1,11 @@
+---
+description: ReachLab engineering, evidence, and project conventions
+alwaysApply: true
+---
+ReachLab is a standalone robotics education workbench. Do not import or modify the student's separate physical therapy project.
+Use dependency-free JavaScript ES modules and accessible HTML/CSS. All simulation and learning must work locally without credentials, cloud APIs, or CDNs.
+Angles in the robotics core are radians. Links and obstacles use consistent simulated millimeter units. The app is a simplified planar kinematic model, not a real robot controller.
+Exact geometry must validate every planned motion. The learned collision classifier can be wrong; never let it authorize physical movement or replace the geometry oracle.
+Run node --test and node scripts/benchmark.mjs after core changes. Update reproducible results, never invent measurements, user impact, awards, or validation.
+Keep AI assistance and real student contributions documented separately. Do not claim student-authored development that was done by assistants.
+Do not publish entries, create accounts, spend money, or alter unrelated projects as part of implementation.
