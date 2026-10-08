@@ -1,6 +1,6 @@
 {
   "scope": "Automated local browser functional checks; no human usability study",
-  "testedUrl": "http://127.0.0.1:4173",
+  "testedUrl": "https://aamogh21.github.io/reachlab/",
   "checks": [
     "default geometry-validated route",
     "playback reaches target",

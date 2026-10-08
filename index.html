@@ -48,11 +48,11 @@
         </div>
       </section>
       <nav aria-label="Workbench views">
-        <button class="tab active" data-view="design">
+        <button class="tab active" data-view="design" aria-pressed="true">
           01 <span>Design & move</span></button
-        ><button class="tab" data-view="learn">
+        ><button class="tab" data-view="learn" aria-pressed="false">
           02 <span>Train & test AI</span></button
-        ><button class="tab" data-view="lessons">
+        ><button class="tab" data-view="lessons" aria-pressed="false">
           03 <span>Engineering challenges</span>
         </button>
       </nav>
@@ -195,21 +195,27 @@
             </div>
             <div class="map-head">
               <span>Configuration space</span>
-              <div class="switcher">
-                <button id="truth" class="selected">Geometry</button
-                ><button id="prediction">AI prediction</button>
+              <div class="switcher" role="group" aria-label="Configuration map">
+                <button id="truth" class="selected" aria-pressed="true">Geometry</button
+                ><button id="prediction" aria-pressed="false">AI prediction</button>
               </div>
             </div>
             <canvas
               id="cspace"
               width="600"
               height="400"
+              tabindex="0"
+              aria-describedby="map-hint"
               aria-label="Joint configuration space: collision regions, predictions, and current arm position"
             ></canvas>
             <div class="canvas-footer">
               <span>Shoulder angle → · Elbow angle ↑</span
               ><span>Coral = collision · mint = free</span>
             </div>
+            <p class="small" id="map-hint">
+              Arrow keys inspect this map while Train is open.
+            </p>
+            <p id="map-status" class="small" role="status" aria-live="polite"></p>
             <p class="small">
               Click the map to inspect an arm configuration. Each scene or link
               change invalidates the trained model.
@@ -255,7 +261,7 @@
                 </tr>
               </tbody>
             </table>
-            <div class="insight" id="insight">
+            <div class="insight" id="insight" role="status" aria-live="polite">
               Train your first model to see where it succeeds—and where it
               fails.
             </div>

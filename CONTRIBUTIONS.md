@@ -15,3 +15,5 @@ Record only work that actually occurred. Keep dates, commits, experiment exports
 |---|---|---|---|
 
 Suggested real next steps: reproduce the benchmark; derive and explain inverse kinematics; design and compare new obstacle scenes; investigate missed collisions; modify a meaningful algorithm or challenge; run a small appropriately consented classroom usability session if suitable. These are suggestions, not completed activities.
+
+October 8 release revision: Codex expanded the synthetic benchmark to three layouts and five seed pairs, generated two figures, revised the report, authenticated GitHub through the user-completed device flow, and deployed GitHub Pages. Cursor was assigned launch accessibility implementation; its exact changes and verification are recorded in research/results/cursor-launch-review.md. Human school information was supplied separately and is not bundled into the public app.

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="description"
+      content="Watch a three-minute demonstration of ReachLab's robotics simulator and local collision-learning model."
+    />
+    <title>ReachLab demonstration</title>
+    <link rel="icon" href="icon.svg" />
+    <style>
+      body {
+        margin: 0;
+        background: #0b151c;
+        color: #e0eee8;
+        font:
+          16px/1.6 system-ui,
+          sans-serif;
+      }
+      main {
+        max-width: 1000px;
+        margin: 40px auto;
+        padding: 24px;
+      }
+      a {
+        color: #b4eacb;
+      }
+      h1 {
+        font-size: clamp(28px, 5vw, 44px);
+        line-height: 1.2;
+      }
+      video {
+        width: 100%;
+        max-height: 75vh;
+        background: #000;
+        border: 1px solid #31504c;
+        border-radius: 12px;
+      }
+      p {
+        max-width: 75ch;
+      }
+      a:focus-visible,
+      video:focus-visible {
+        outline: 3px solid #b6b4ed;
+        outline-offset: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a href="./">← Open ReachLab</a>
+      <h1>See the workbench in action.</h1>
+      <p>
+        A 3-minute 10-second captioned recording of actual app operation: change
+        an arm, plan a route, train a collision classifier, inspect its
+        mistakes, and reload offline. No audio narration.
+      </p>
+      <video
+        controls
+        preload="metadata"
+        aria-label="Captioned ReachLab product demonstration"
+      >
+        <source src="demo/reachlab-demo.webm" type="video/webm" />
+        Your browser cannot play this video.
+        <a href="demo/reachlab-demo.webm">Download the recording</a>.
+      </video>
+      <p>
+        The recording shows the initial release. Later accessibility
+        improvements preserve the demonstrated features. Results are simulated;
+        no physical robot or learner study is shown. Software and recording were
+        produced with extensive AI assistance.
+      </p>
+      <p>
+        <a href="https://github.com/AAmogh21/reachlab"
+          >Source and launch instructions</a
+        >
+      </p>
+    </main>
+  </body>
+</html>

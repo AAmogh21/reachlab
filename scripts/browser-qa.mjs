@@ -13,8 +13,9 @@ const context = await browser.newContext({
 });
 const page = await context.newPage(),
   errors = [];
+const baseUrl = process.env.REACHLAB_URL || "http://127.0.0.1:4173";
 page.on("pageerror", (e) => errors.push(e.message));
-await page.goto("http://127.0.0.1:4173");
+await page.goto(baseUrl);
 await page.locator("#plan").click();
 await page.waitForFunction(() =>
   document.querySelector("#message").textContent.includes("waypoints found"),
@@ -118,11 +119,14 @@ assert.equal(
 );
 assert.deepEqual(errors, []);
 await writeFile(
-  output + "/research/results/browser-qa.json",
+  output +
+    "/research/results/" +
+    (process.env.REACHLAB_URL ? "hosted-browser-qa.json" : "browser-qa.json"),
   JSON.stringify(
     {
       scope:
         "Automated local browser functional checks; no human usability study",
+      testedUrl: baseUrl,
       checks: [
         "default geometry-validated route",
         "playback reaches target",

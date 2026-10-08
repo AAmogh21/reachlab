@@ -15,11 +15,11 @@ Checked October 8, 2026.
 
 ## Pending or unverified
 
-- GitHub CLI authentication is pending user authorization; `gh auth status` reported no signed-in host.
-- Public GitHub repository, hosting, video upload, Devpost login/entry, and competition submission have not been completed.
+- GitHub CLI authentication completed for AAmogh21. Public source: https://github.com/AAmogh21/reachlab. Live app: https://aamogh21.github.io/reachlab/.
+- Public repository and GitHub Pages hosting are complete. Video hosting, Devpost entry, and competition submission remain pending.
 - Cursor model execution is verified by the completed reviewer; the Pro billing plan was not independently verified.
 - Cursor's cloud GitHub integration and other external account integrations have not been granted. They are optional for this local app; persistent OAuth access must be authorized by the user in the provider's flow.
-- The school/congressional district is still unknown, and Congressional App Challenge requires substantial student technical contribution.
+- School information has been supplied and checked separately. Congressional App Challenge still requires substantial student technical contribution.
 - ForgeHacks detailed rules accept minors with guardian permission, but its overview age banner conflicts. Resolve actual registration eligibility before entry.
 - No journal publication, award, or user impact is claimed.
 

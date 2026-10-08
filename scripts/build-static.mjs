@@ -5,6 +5,7 @@ const destination = new URL("../dist/", import.meta.url);
 await mkdir(destination, { recursive: true });
 for (const file of [
   "index.html",
+  "demo.html",
   "src",
   "sw.js",
   "manifest.webmanifest",
@@ -17,5 +18,10 @@ for (const file of [
     recursive: true,
   });
 }
+await mkdir(new URL("demo/", destination), { recursive: true });
+await cp(
+  new URL("../submission/reachlab-demo.webm", import.meta.url),
+  new URL("demo/reachlab-demo.webm", destination),
+);
 await writeFile(new URL(".nojekyll", destination), "");
 console.log("Static deployment prepared in " + root + "dist");

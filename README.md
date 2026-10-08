@@ -2,6 +2,8 @@
 
 **Engineering, within reach.** A free local robotics workbench for students who want to explore robot geometry, path planning, and machine learning without robot hardware.
 
+**[Open the live app](https://aamogh21.github.io/reachlab/)** · [Source repository](https://github.com/AAmogh21/reachlab) · [Release and maintenance](RELEASE.md)
+
 ReachLab is an independent new project. It does not use code, datasets, or research from the student's separate physical therapy application.
 
 ## Run
@@ -39,6 +41,7 @@ The browser caches application files after a successful first load for offline r
 ```sh
 node --test
 node scripts/benchmark.mjs
+node scripts/extended-benchmark.mjs
 ```
 
 Optional development checks use the pinned tools in `package-lock.json`:
@@ -50,9 +53,9 @@ npm run lint
 npm run test:browser
 ```
 
-Keep the local server running for the browser checks. These tools are not needed to use the app. A captioned demonstration is saved in `submission/reachlab-demo.webm`.
+Keep the local server running for the browser checks. `node scripts/launch-qa.mjs` checks the accessible control states and keyboard map interaction; `node scripts/review-regressions.mjs` checks the Cursor review fixes. These tools are not needed to use the app. A captioned demonstration is saved in `submission/reachlab-demo.webm`.
 
-The technical report and benchmark are under `research/`. Evaluation uses simulated geometry; it is not a human learning study or physical-robot test. The benchmark scene is intentionally different from the default UI scene. Browser evaluation uses 800 test configurations; the saved research benchmark uses 3,000. Their metrics must not be conflated.
+The revised eight-page report and benchmarks are under `research/`. The expanded experiment contains 45 model evaluations over three layouts, five paired seeds, and three training sizes. Each scene-seed test set contains 1,000 configurations; the original single-scene benchmark uses 3,000 and the UI uses 800. Their metrics must not be conflated. Evaluation uses simulated geometry; it is not a human learning study or physical-robot test.
 
 ## Limits
 

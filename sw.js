@@ -1,4 +1,4 @@
-const CACHE = "reachlab-v2";
+const CACHE = "reachlab-v3";
 const FILES = [
   "./",
   "./index.html",
@@ -9,6 +9,7 @@ const FILES = [
   "./manifest.webmanifest",
   "./icon.svg",
   "./research/technical-report.md",
+  "./research/technical-report.pdf",
 ];
 self.addEventListener("install", (event) =>
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(FILES))),

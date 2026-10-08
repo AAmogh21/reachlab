@@ -1,0 +1,5 @@
+{
+  "checked": "45 run counts, nine summary rows, boundary counts, reported percentages, constant-free baseline",
+  "result": "pass",
+  "scope": "Numerical consistency with saved synthetic outputs; not independent scientific replication"
+}

@@ -48,8 +48,35 @@ const screen = (p) => ({
   x: origin.x + p.x * scale,
   y: origin.y - p.y * scale,
 });
+function setStatus(id, text) {
+  const el = $(id);
+  if (el.textContent !== text) el.textContent = text;
+}
 function message(text) {
-  $("message").textContent = text;
+  setStatus("message", text);
+}
+function clampJoint(angle) {
+  return Math.min(Math.PI, Math.max(-Math.PI, angle));
+}
+function announceInspection(atLimit) {
+  const hit = isCollision(q.q1, q.q2, config);
+  let text = `Shoulder ${deg(q.q1).toFixed(0)}°, elbow ${deg(q.q2).toFixed(0)}°. Geometry: ${hit ? "collision" : "clear"}.`;
+  if (mapMode === "prediction" && model) {
+    const predicted = model.predict(q.q1, q.q2).collision;
+    text += ` AI: ${predicted ? "collision" : "clear"}.`;
+  }
+  if (atLimit) text += " Joint limit.";
+  setStatus("map-status", text);
+}
+function setMapPressed(mode) {
+  mapMode = mode;
+  for (const [id, on] of [
+    ["truth", mode === "truth"],
+    ["prediction", mode === "prediction"],
+  ]) {
+    $(id).classList.toggle("selected", on);
+    $(id).setAttribute("aria-pressed", on ? "true" : "false");
+  }
 }
 function stopMotion() {
   cancelAnimationFrame(animation);
@@ -73,16 +100,18 @@ function invalidateModel() {
   $("dataset").disabled = true;
   for (const id of ["accuracy", "missed", "recall", "tn", "fp", "fn", "tp"])
     $(id).textContent = "—";
-  $("insight").textContent =
-    "Design changed. Train again to evaluate this robot and environment.";
-  mapMode = "truth";
-  $("truth").classList.add("selected");
-  $("prediction").classList.remove("selected");
+  setStatus(
+    "insight",
+    "Design changed. Train again to evaluate this robot and environment.",
+  );
+  setMapPressed("truth");
 }
 function sync() {
   for (const id of ["q1", "q2"]) {
+    if (animation && document.activeElement === $(id)) continue;
+    const label = deg(q[id]).toFixed(0) + "°";
+    if ($(id + "-out").textContent !== label) $(id + "-out").textContent = label;
     $(id).value = deg(q[id]);
-    $(id + "-out").textContent = deg(q[id]).toFixed(0) + "°";
   }
   $("tx").value = String(target.x);
   $("ty").value = String(target.y);
@@ -253,10 +282,15 @@ function setView(next) {
   document
     .querySelectorAll(".view")
     .forEach((el) => el.classList.toggle("active", el.id === next));
-  document
-    .querySelectorAll(".tab")
-    .forEach((el) => el.classList.toggle("active", el.dataset.view === next));
-  if (next === "learn") drawMap();
+  document.querySelectorAll(".tab").forEach((el) => {
+    const on = el.dataset.view === next;
+    el.classList.toggle("active", on);
+    el.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+  if (next === "learn") {
+    drawMap();
+    announceInspection(false);
+  }
 }
 document
   .querySelectorAll(".tab")
@@ -321,7 +355,33 @@ map.onclick = (e) => {
   };
   invalidatePath();
   sync();
+  announceInspection(false);
 };
+document.addEventListener("keydown", (e) => {
+  if (view !== "learn" || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey)
+    return;
+  const step = {
+    ArrowLeft: [-1, 0],
+    ArrowRight: [1, 0],
+    ArrowUp: [0, 1],
+    ArrowDown: [0, -1],
+  }[e.key];
+  if (!step) return;
+  const tag = e.target.tagName;
+  if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+  e.preventDefault();
+  const next = {
+    q1: clampJoint(q.q1 + step[0] * rad(5)),
+    q2: clampJoint(q.q2 + step[1] * rad(5)),
+  };
+  const atLimit = next.q1 === q.q1 && next.q2 === q.q2;
+  if (!atLimit) {
+    q = next;
+    invalidatePath();
+    sync();
+  }
+  announceInspection(atLimit);
+});
 $("plan").onclick = async () => {
   invalidatePath();
   if ($("tx").value === "" || $("ty").value === "") {
@@ -411,15 +471,16 @@ $("play").onclick = () => {
       q1: route[index].q1 + (route[index + 1].q1 - route[index].q1) * t,
       q2: route[index].q2 + (route[index + 1].q2 - route[index].q2) * t,
     };
+    const done = now - start >= duration;
+    if (done) animation = 0;
     sync();
-    if (now - start < duration) animation = requestAnimationFrame(frame);
-    else {
-      animation = 0;
+    if (done) {
       $("play").disabled = false;
       message(
         "Target reached. This was a kinematic simulation, not a physical hardware test.",
       );
-    }
+      if (view === "learn") announceInspection(false);
+    } else animation = requestAnimationFrame(frame);
   }
   animation = requestAnimationFrame(frame);
 };
@@ -437,8 +498,10 @@ $("train").onclick = () => {
   const snapshot = structuredClone(config);
   $("train").disabled = true;
   $("train").textContent = "Training…";
-  $("insight").textContent =
-    "Generating labeled configurations and testing on an independent seed…";
+  setStatus(
+    "insight",
+    "Generating labeled configurations and testing on an independent seed…",
+  );
   worker = new Worker(new URL("./learning-worker.js", import.meta.url), {
     type: "module",
   });
@@ -446,7 +509,7 @@ $("train").onclick = () => {
   worker.onmessage = ({ data }) => {
     if (worker !== activeWorker) return;
     if (data.error) {
-      $("insight").textContent = data.error;
+      setStatus("insight", data.error);
     } else {
       samples = data.samples;
       metrics = data.metrics;
@@ -463,8 +526,10 @@ $("train").onclick = () => {
         ["tp", "truePositive"],
       ])
         $(id).textContent = c[key];
-      $("insight").textContent =
-        `${metrics.falseSafe} actual collisions were predicted free. ${metrics.falseSafe === 0 ? "Even zero observed misses does not establish a guarantee." : "More data may help, but does not guarantee zero errors."} Geometry still checks every route.`;
+      setStatus(
+        "insight",
+        `${metrics.falseSafe} actual collisions were predicted free. ${metrics.falseSafe === 0 ? "Even zero observed misses does not establish a guarantee." : "More data may help, but does not guarantee zero errors."} Geometry still checks every route.`,
+      );
       $("dataset").disabled = false;
       drawMap();
       drawArm();
@@ -476,8 +541,7 @@ $("train").onclick = () => {
   };
   worker.onerror = () => {
     if (worker !== activeWorker) return;
-    $("insight").textContent =
-      "Training failed. Reload the page and try again.";
+    setStatus("insight", "Training failed. Reload the page and try again.");
     $("train").disabled = false;
     $("train").textContent = "Train & evaluate ↗";
     worker?.terminate();
@@ -491,20 +555,18 @@ $("train").onclick = () => {
 };
 const percent = (n) => (n === null ? "n/a" : (100 * n).toFixed(1) + "%");
 $("truth").onclick = () => {
-  mapMode = "truth";
-  $("truth").classList.add("selected");
-  $("prediction").classList.remove("selected");
+  setMapPressed("truth");
   drawMap();
+  announceInspection(false);
 };
 $("prediction").onclick = () => {
   if (!model) {
-    $("insight").textContent = "Train a model first to see predictions.";
+    setStatus("insight", "Train a model first to see predictions.");
     return;
   }
-  mapMode = "prediction";
-  $("prediction").classList.add("selected");
-  $("truth").classList.remove("selected");
+  setMapPressed("prediction");
   drawMap();
+  announceInspection(false);
 };
 function download(name, text, type) {
   const u = URL.createObjectURL(new Blob([text], { type }));
@@ -570,8 +632,10 @@ document.querySelectorAll("[data-challenge]").forEach(
       if (c === "ml") {
         setView("learn");
         $("samples").value = "100";
-        $("insight").textContent =
-          "Predict what will happen with 100 examples. Train, record missed collisions, then try 1,500 examples.";
+        setStatus(
+          "insight",
+          "Predict what will happen with 100 examples. Train, record missed collisions, then try 1,500 examples.",
+        );
       } else {
         setView("design");
         invalidatePath();
