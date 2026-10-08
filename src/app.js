@@ -1,0 +1,604 @@
+import {
+  forwardKinematics,
+  inverseKinematics,
+  isCollision,
+  planPath,
+  sampleDataset,
+  trainKNN,
+} from "./robotics.js";
+const $ = (id) => document.getElementById(id),
+  rad = (d) => (d * Math.PI) / 180,
+  deg = (r) => (r * 180) / Math.PI;
+const scenes = [
+  [
+    { x: 180, y: 0, r: 12 },
+    { x: -150, y: -60, r: 18 },
+  ],
+  [],
+  [
+    { x: 145, y: 35, r: 22 },
+    { x: 65, y: -110, r: 24 },
+    { x: -105, y: 75, r: 18 },
+  ],
+];
+let config = {
+  links: [130, 100],
+  base: { x: 0, y: 0 },
+  linkRadius: 5,
+  obstacles: structuredClone(scenes[0]),
+};
+let q = { q1: rad(-35), q2: rad(0) },
+  target = { x: 185, y: 125 },
+  path = [],
+  animation = 0,
+  model = null,
+  samples = [],
+  metrics = null,
+  mapMode = "truth",
+  predMap = null,
+  worker = null,
+  view = "design";
+const arm = $("arm"),
+  ctx = arm.getContext("2d"),
+  map = $("cspace"),
+  mx = map.getContext("2d");
+const scale = 0.83,
+  origin = { x: 450, y: 290 };
+const screen = (p) => ({
+  x: origin.x + p.x * scale,
+  y: origin.y - p.y * scale,
+});
+function message(text) {
+  $("message").textContent = text;
+}
+function stopMotion() {
+  cancelAnimationFrame(animation);
+  animation = 0;
+}
+function invalidatePath() {
+  stopMotion();
+  path = [];
+  $("play").disabled = true;
+  $("planner-readout").textContent = "Ready";
+}
+function invalidateModel() {
+  worker?.terminate();
+  worker = null;
+  model = null;
+  samples = [];
+  metrics = null;
+  predMap = null;
+  $("train").disabled = false;
+  $("train").textContent = "Train & evaluate ↗";
+  $("dataset").disabled = true;
+  for (const id of ["accuracy", "missed", "recall", "tn", "fp", "fn", "tp"])
+    $(id).textContent = "—";
+  $("insight").textContent =
+    "Design changed. Train again to evaluate this robot and environment.";
+  mapMode = "truth";
+  $("truth").classList.add("selected");
+  $("prediction").classList.remove("selected");
+}
+function sync() {
+  for (const id of ["q1", "q2"]) {
+    $(id).value = deg(q[id]);
+    $(id + "-out").textContent = deg(q[id]).toFixed(0) + "°";
+  }
+  $("tx").value = String(target.x);
+  $("ty").value = String(target.y);
+  $("l1-out").textContent = config.links[0] + " mm";
+  $("l2-out").textContent = config.links[1] + " mm";
+  const tip = forwardKinematics(q.q1, q.q2, config).tip;
+  $("tip-readout").textContent = `${tip.x.toFixed(0)}, ${tip.y.toFixed(0)} mm`;
+  const hit = isCollision(q.q1, q.q2, config);
+  $("collision-badge").textContent = hit
+    ? "Collision detected"
+    : "Clear configuration";
+  $("collision-badge").classList.toggle("blocked", hit);
+  drawArm();
+  if (view === "learn") drawMap();
+}
+function line(a, b, color, width) {
+  const pa = screen(a),
+    pb = screen(b);
+  ctx.beginPath();
+  ctx.moveTo(pa.x, pa.y);
+  ctx.lineTo(pb.x, pb.y);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineCap = "round";
+  ctx.stroke();
+}
+function circle(p, r, color, stroke) {
+  const a = screen(p);
+  ctx.beginPath();
+  ctx.arc(a.x, a.y, r, 0, 2 * Math.PI);
+  ctx.fillStyle = color;
+  ctx.fill();
+  if (stroke) {
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+}
+function drawArm() {
+  ctx.clearRect(0, 0, 900, 580);
+  ctx.fillStyle = "#101d25";
+  ctx.fillRect(0, 0, 900, 580);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = "#1d303b";
+  for (let x = 30; x < 900; x += 30) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, 580);
+    ctx.stroke();
+  }
+  for (let y = 20; y < 580; y += 30) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(900, y);
+    ctx.stroke();
+  }
+  ctx.setLineDash([4, 6]);
+  ctx.strokeStyle = "#2c4652";
+  ctx.beginPath();
+  ctx.arc(
+    origin.x,
+    origin.y,
+    (config.links[0] + config.links[1]) * scale,
+    0,
+    2 * Math.PI,
+  );
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(
+    origin.x,
+    origin.y,
+    Math.abs(config.links[0] - config.links[1]) * scale,
+    0,
+    2 * Math.PI,
+  );
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#6e8998";
+  ctx.font = "11px monospace";
+  ctx.fillText("WORKSPACE / mm", 25, 27);
+  ctx.fillText("+Y", origin.x + 8, 45);
+  ctx.fillText("+X", 850, origin.y - 8);
+  for (const o of config.obstacles) {
+    circle(o, o.r * scale, "#3a2923", "#ed9a75");
+    circle(o, 3, "#ed9a75");
+  }
+  if (path.length) {
+    ctx.beginPath();
+    path.forEach((p, i) => {
+      const s = screen(forwardKinematics(p.q1, p.q2, config).tip);
+      i ? ctx.lineTo(s.x, s.y) : ctx.moveTo(s.x, s.y);
+    });
+    ctx.strokeStyle = "#6eab8c";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  const pos = forwardKinematics(q.q1, q.q2, config),
+    hit = isCollision(q.q1, q.q2, config);
+  line(pos.base, pos.elbow, "#26473d", 25);
+  line(pos.elbow, pos.tip, "#26473d", 21);
+  line(pos.base, pos.elbow, hit ? "#ed9a75" : "#b4eacb", 10);
+  line(pos.elbow, pos.tip, hit ? "#ed9a75" : "#b4eacb", 8);
+  circle(pos.base, 19, "#172c32", "#91a6b2");
+  circle(pos.base, 7, "#b4eacb");
+  circle(pos.elbow, 12, "#10231b", "#b4eacb");
+  circle(pos.elbow, 4, "#b4eacb");
+  circle(pos.tip, 7, "#b4eacb");
+  circle(target, 10, "#25233d", "#b6b4ed");
+  const t = screen(target);
+  ctx.strokeStyle = "#b6b4ed";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(t.x - 17, t.y);
+  ctx.lineTo(t.x + 17, t.y);
+  ctx.moveTo(t.x, t.y - 17);
+  ctx.lineTo(t.x, t.y + 17);
+  ctx.stroke();
+  ctx.fillStyle = "#b6b4ed";
+  ctx.fillText(
+    `TARGET ${target.x.toFixed(0)}, ${target.y.toFixed(0)}`,
+    t.x + 18,
+    t.y - 14,
+  );
+  ctx.fillStyle = "#91a6b2";
+  ctx.fillText(`L₁ ${config.links[0]} · L₂ ${config.links[1]}`, 25, 553);
+  if (model) {
+    const p = model.predict(q.q1, q.q2);
+    ctx.fillStyle = p.collision ? "#ed9a75" : "#b4eacb";
+    ctx.fillText(
+      `AI: ${p.label.toUpperCase()} · GEOMETRY: ${hit ? "COLLISION" : "FREE"}`,
+      560,
+      553,
+    );
+  }
+}
+function drawMap() {
+  const cols = 64,
+    rows = 48,
+    w = 600 / cols,
+    h = 400 / rows;
+  for (let y = 0; y < rows; y++)
+    for (let x = 0; x < cols; x++) {
+      const a = -Math.PI + ((x + 0.5) * 2 * Math.PI) / cols,
+        b = Math.PI - ((y + 0.5) * 2 * Math.PI) / rows;
+      const hit =
+        mapMode === "prediction" && predMap
+          ? predMap[y * cols + x]
+          : isCollision(a, b, config);
+      mx.fillStyle = hit ? "#85503e" : "#244a3a";
+      mx.fillRect(x * w, y * h, w + 0.1, h + 0.1);
+    }
+  mx.strokeStyle = "#d9f5e3";
+  mx.lineWidth = 2;
+  mx.beginPath();
+  mx.arc(
+    ((q.q1 + Math.PI) / (2 * Math.PI)) * 600,
+    ((Math.PI - q.q2) / (2 * Math.PI)) * 400,
+    6,
+    0,
+    Math.PI * 2,
+  );
+  mx.stroke();
+}
+function setView(next) {
+  view = next;
+  document
+    .querySelectorAll(".view")
+    .forEach((el) => el.classList.toggle("active", el.id === next));
+  document
+    .querySelectorAll(".tab")
+    .forEach((el) => el.classList.toggle("active", el.dataset.view === next));
+  if (next === "learn") drawMap();
+}
+document
+  .querySelectorAll(".tab")
+  .forEach((b) => (b.onclick = () => setView(b.dataset.view)));
+document.querySelector(".intro-note a").onclick = (e) => {
+  e.preventDefault();
+  setView("lessons");
+  document
+    .querySelector("nav")
+    .scrollIntoView({ behavior: "smooth", block: "start" });
+};
+for (const id of ["q1", "q2"])
+  $(id).oninput = () => {
+    invalidatePath();
+    q[id] = rad(Number($(id).value));
+    sync();
+  };
+for (const [id, index] of [
+  ["l1", 0],
+  ["l2", 1],
+])
+  $(id).oninput = () => {
+    config.links[index] = Number($(id).value);
+    invalidatePath();
+    invalidateModel();
+    sync();
+  };
+$("scene").onchange = () => {
+  config.obstacles = structuredClone(scenes[Number($("scene").value)]);
+  invalidatePath();
+  invalidateModel();
+  sync();
+};
+for (const id of ["tx", "ty"])
+  $(id).oninput = () => {
+    invalidatePath();
+    const x = Number($("tx").value),
+      y = Number($("ty").value);
+    if (
+      $("tx").value !== "" &&
+      $("ty").value !== "" &&
+      Number.isFinite(x) &&
+      Number.isFinite(y)
+    )
+      target = { x, y };
+    drawArm();
+  };
+arm.onclick = (e) => {
+  const r = arm.getBoundingClientRect();
+  target = {
+    x: Math.round((((e.clientX - r.left) * 900) / r.width - origin.x) / scale),
+    y: Math.round((origin.y - ((e.clientY - r.top) * 580) / r.height) / scale),
+  };
+  invalidatePath();
+  sync();
+};
+map.onclick = (e) => {
+  const r = map.getBoundingClientRect();
+  q = {
+    q1: -Math.PI + ((e.clientX - r.left) / r.width) * 2 * Math.PI,
+    q2: Math.PI - ((e.clientY - r.top) / r.height) * 2 * Math.PI,
+  };
+  invalidatePath();
+  sync();
+};
+$("plan").onclick = async () => {
+  invalidatePath();
+  if ($("tx").value === "" || $("ty").value === "") {
+    message("Enter both target coordinates before planning.");
+    return;
+  }
+  $("plan").disabled = true;
+  message("Searching joint space…");
+  await new Promise((r) => setTimeout(r, 30));
+  try {
+    const solutions = inverseKinematics(target.x, target.y, config).map(
+      (solution) => {
+        // IK canonicalizes the exact branch-cut endpoint to -π. Use +π
+        // when it is closer to the current joint, without wrapping any motion
+        // across the modeled hard joint limits.
+        const adjusted = { ...solution };
+        for (const joint of ["q1", "q2"]) {
+          if (Math.abs(adjusted[joint] + Math.PI) < 1e-12 && q[joint] > 0)
+            adjusted[joint] = Math.PI;
+        }
+        return adjusted;
+      },
+    );
+    if (!solutions.length) {
+      message(
+        "Target is outside the reachable annulus. Move it closer, or change the link lengths.",
+      );
+      return;
+    }
+    const candidates = solutions.filter(
+      (s) => !isCollision(s.q1, s.q2, config),
+    );
+    if (!candidates.length) {
+      message(
+        "Both target configurations collide. Try another target or environment.",
+      );
+      return;
+    }
+    candidates.sort(
+      (a, b) =>
+        Math.hypot(a.q1 - q.q1, a.q2 - q.q2) -
+        Math.hypot(b.q1 - q.q1, b.q2 - q.q2),
+    );
+    let result;
+    for (const goal of candidates) {
+      result = planPath(q, goal, config, { resolution: 64 });
+      if (!result.error) break;
+    }
+    if (result.error) {
+      message(result.error + ". Try a different start or target.");
+      $("planner-readout").textContent = "No route";
+    } else {
+      path = result.path;
+      $("play").disabled = false;
+      $("planner-readout").textContent = `${result.expanded} nodes searched`;
+      message(
+        `${path.length} waypoints found. Geometry checks and conservative swept-motion bounds validate every edge in this simplified model.`,
+      );
+      drawArm();
+    }
+  } catch (e) {
+    message("Unable to plan: " + e.message);
+  } finally {
+    $("plan").disabled = false;
+  }
+};
+$("play").onclick = () => {
+  if (path.length < 2) return;
+  stopMotion();
+  const route = path.map((p) => ({ ...p }));
+  const lengths = route
+    .slice(1)
+    .map((p, i) => Math.hypot(p.q1 - route[i].q1, p.q2 - route[i].q2));
+  const total = lengths.reduce((a, b) => a + b, 0);
+  const start = performance.now();
+  const duration = Math.max(1800, total * 850);
+  $("play").disabled = true;
+  function frame(now) {
+    let distance = Math.min(1, (now - start) / duration) * total,
+      index = 0;
+    while (index < lengths.length - 1 && distance > lengths[index]) {
+      distance -= lengths[index];
+      index++;
+    }
+    const t = lengths[index] ? Math.min(1, distance / lengths[index]) : 1;
+    q = {
+      q1: route[index].q1 + (route[index + 1].q1 - route[index].q1) * t,
+      q2: route[index].q2 + (route[index + 1].q2 - route[index].q2) * t,
+    };
+    sync();
+    if (now - start < duration) animation = requestAnimationFrame(frame);
+    else {
+      animation = 0;
+      $("play").disabled = false;
+      message(
+        "Target reached. This was a kinematic simulation, not a physical hardware test.",
+      );
+    }
+  }
+  animation = requestAnimationFrame(frame);
+};
+$("reset").onclick = () => {
+  invalidatePath();
+  q = { q1: rad(-35), q2: rad(0) };
+  target = { x: 185, y: 125 };
+  message(
+    "Choose a target, then plan a route. Every path is checked with geometry.",
+  );
+  sync();
+};
+$("train").onclick = () => {
+  worker?.terminate();
+  const snapshot = structuredClone(config);
+  $("train").disabled = true;
+  $("train").textContent = "Training…";
+  $("insight").textContent =
+    "Generating labeled configurations and testing on an independent seed…";
+  worker = new Worker(new URL("./learning-worker.js", import.meta.url), {
+    type: "module",
+  });
+  const activeWorker = worker;
+  worker.onmessage = ({ data }) => {
+    if (worker !== activeWorker) return;
+    if (data.error) {
+      $("insight").textContent = data.error;
+    } else {
+      samples = data.samples;
+      metrics = data.metrics;
+      predMap = data.map;
+      model = trainKNN(samples, data.k);
+      $("accuracy").textContent = percent(metrics.accuracy);
+      $("missed").textContent = metrics.falseSafe;
+      $("recall").textContent = percent(metrics.recall);
+      const c = metrics.confusion;
+      for (const [id, key] of [
+        ["tn", "trueNegative"],
+        ["fp", "falsePositive"],
+        ["fn", "falseNegative"],
+        ["tp", "truePositive"],
+      ])
+        $(id).textContent = c[key];
+      $("insight").textContent =
+        `${metrics.falseSafe} actual collisions were predicted free. ${metrics.falseSafe === 0 ? "Even zero observed misses does not establish a guarantee." : "More data may help, but does not guarantee zero errors."} Geometry still checks every route.`;
+      $("dataset").disabled = false;
+      drawMap();
+      drawArm();
+    }
+    $("train").disabled = false;
+    $("train").textContent = "Train & evaluate ↗";
+    activeWorker.terminate();
+    worker = null;
+  };
+  worker.onerror = () => {
+    if (worker !== activeWorker) return;
+    $("insight").textContent =
+      "Training failed. Reload the page and try again.";
+    $("train").disabled = false;
+    $("train").textContent = "Train & evaluate ↗";
+    worker?.terminate();
+    worker = null;
+  };
+  worker.postMessage({
+    config: snapshot,
+    count: Number($("samples").value),
+    k: Number($("neighbors").value),
+  });
+};
+const percent = (n) => (n === null ? "n/a" : (100 * n).toFixed(1) + "%");
+$("truth").onclick = () => {
+  mapMode = "truth";
+  $("truth").classList.add("selected");
+  $("prediction").classList.remove("selected");
+  drawMap();
+};
+$("prediction").onclick = () => {
+  if (!model) {
+    $("insight").textContent = "Train a model first to see predictions.";
+    return;
+  }
+  mapMode = "prediction";
+  $("prediction").classList.add("selected");
+  $("truth").classList.remove("selected");
+  drawMap();
+};
+function download(name, text, type) {
+  const u = URL.createObjectURL(new Blob([text], { type }));
+  const a = document.createElement("a");
+  a.href = u;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(u), 1000);
+}
+$("dataset").onclick = () =>
+  download(
+    "reachlab-training.csv",
+    "q1_radians,q2_radians,collision\n" +
+      samples.map((s) => `${s.q1},${s.q2},${Number(s.collision)}`).join("\n"),
+    "text/csv",
+  );
+$("export").onclick = () =>
+  download(
+    "reachlab-experiment.json",
+    JSON.stringify(
+      {
+        schema: "reachlab-experiment-v1",
+        scope:
+          "Synthetic planar kinematic simulation. No physical robot or learner outcome validation.",
+        config,
+        configuration: q,
+        target,
+        path,
+        model: metrics
+          ? {
+              type: "periodic-kNN",
+              trainingCount: samples.length,
+              k: model.k,
+              trainingSeed: 314159,
+              testSeed: 90210,
+              metrics,
+            }
+          : null,
+        notebook: $("notes").value,
+      },
+      null,
+      2,
+    ),
+    "application/json",
+  );
+try {
+  $("notes").value = localStorage.getItem("reachlab-notes") || "";
+} catch {
+  $("saved").textContent =
+    "Device storage is unavailable; use Export experiment to save your notes.";
+}
+$("notes").oninput = () => {
+  try {
+    localStorage.setItem("reachlab-notes", $("notes").value);
+  } catch {
+    $("saved").textContent = "Use Export experiment to save these notes.";
+  }
+};
+document.querySelectorAll("[data-challenge]").forEach(
+  (b) =>
+    (b.onclick = () => {
+      const c = b.dataset.challenge;
+      if (c === "ml") {
+        setView("learn");
+        $("samples").value = "100";
+        $("insight").textContent =
+          "Predict what will happen with 100 examples. Train, record missed collisions, then try 1,500 examples.";
+      } else {
+        setView("design");
+        invalidatePath();
+        invalidateModel();
+        if (c === "ik") {
+          $("scene").value = "1";
+          config.obstacles = [];
+          target = { x: 120, y: 100 };
+          message(
+            "Target has two inverse-kinematics branches. Move the sliders to discover them.",
+          );
+        } else {
+          $("scene").value = "0";
+          config.obstacles = structuredClone(scenes[0]);
+          q = { q1: rad(-35), q2: rad(0) };
+          target = { x: 185, y: 125 };
+          message(
+            "Try a route through the workshop. Notice that the whole arm must avoid obstacles.",
+          );
+        }
+        sync();
+      }
+      document
+        .querySelector("nav")
+        .scrollIntoView({ behavior: "smooth", block: "start" });
+    }),
+);
+if ("serviceWorker" in navigator)
+  navigator.serviceWorker.register("./sw.js").catch(() => {});
+sync();
